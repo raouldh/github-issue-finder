@@ -10,7 +10,7 @@ import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
 
 private const val GITHUB_API = "https://api.github.com"
-private const val GITHUB_TOKEN = "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"
+private const val GITHUB_TOKEN = "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"
 
 @Component
 class GithubClient {
@@ -44,6 +44,12 @@ class GithubClient {
     fun getIssuesForRepo(owner: String, repo: String): ResponseEntity<List<Issue>> {
         return apiClient.get()
             .uri("/repos/{owner}/{repo}/issues", owner, repo)
+            .retrieve()
+            .toEntity<List<Issue>>()
+    }
+    fun getIssuesForRepoForPage(owner: String, repo: String, page:String): ResponseEntity<List<Issue>> {
+        return apiClient.get()
+            .uri("/repos/{owner}/{repo}/issues?page={page}", owner, repo, page)
             .retrieve()
             .toEntity<List<Issue>>()
     }

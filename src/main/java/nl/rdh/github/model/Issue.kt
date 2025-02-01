@@ -13,7 +13,7 @@ data class Issue(
     val created_at: String,
     val draft: Boolean?,
     val events_url: String?,
-    val html_url: String?,
+    val html_url: String,
     val id: Long,
     val labels: List<Label>?,
     val labels_url: String?,
