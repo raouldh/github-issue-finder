@@ -1,4 +1,4 @@
-package nl.rdh.github.model
+package nl.rdh.github.client.model
 
 data class Permissions(
     val admin: Boolean,

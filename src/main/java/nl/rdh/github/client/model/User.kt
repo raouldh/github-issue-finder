@@ -1,6 +1,6 @@
-package nl.rdh.github.model
+package nl.rdh.github.client.model
 
-data class Owner(
+data class User(
     val avatar_url: String,
     val events_url: String,
     val followers_url: String,

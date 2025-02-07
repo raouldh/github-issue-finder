@@ -1,10 +1,10 @@
 package nl.rdh.github.services
 
-import nl.rdh.github.api.v1.GithubClient
-import nl.rdh.github.api.v1.IssueSummary
-import nl.rdh.github.model.Issue
-import nl.rdh.github.model.Label
-import nl.rdh.github.model.Repository
+import nl.rdh.github.client.GithubClient
+import nl.rdh.github.api.v1.model.IssueSummary
+import nl.rdh.github.client.model.Issue
+import nl.rdh.github.client.model.Label
+import nl.rdh.github.client.model.Repository
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.util.*

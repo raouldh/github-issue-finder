@@ -1,5 +1,6 @@
 package nl.rdh.github.api.v1
 
+import nl.rdh.github.api.v1.model.IssueSummary
 import nl.rdh.github.services.GetLabelsService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

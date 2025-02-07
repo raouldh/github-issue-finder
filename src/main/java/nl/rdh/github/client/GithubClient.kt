@@ -1,8 +1,8 @@
-package nl.rdh.github.api.v1
+package nl.rdh.github.client
 
-import nl.rdh.github.model.Issue
-import nl.rdh.github.model.Label
-import nl.rdh.github.model.Repository
+import nl.rdh.github.client.model.Issue
+import nl.rdh.github.client.model.Label
+import nl.rdh.github.client.model.Repository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
