@@ -5,7 +5,7 @@ import nl.rdh.github.api.v1.IssueSummary
 import nl.rdh.github.model.Issue
 import nl.rdh.github.model.Label
 import nl.rdh.github.model.Repository
-import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
@@ -13,35 +13,62 @@ import java.util.concurrent.CopyOnWriteArrayList
 @Service
 class GetLabelsService(private val githubClient: GithubClient) {
 
+    // This list is compiled from all unique labels for all spring-cloud and spring-projects repo's
     private val openForContributionLabels: List<String> = listOf(
         "ideal-for-contribution",
+        "ideal-for-user-contribution",
         "status: ideal-for-contribution",
+        "status: first-timers-only",
+        "status/first-timers-only",
         "community contribution",
+        "contribution welcome",
         "help wanted",
         "first-timers-only",
-        "good first issue"
+        "good first issue",
+        "type/help-needed"
     )
 
-    fun getLabelsForRepo(owner: String, repo: String): MutableList<String>? {
-        return githubClient.getLabelsForRepo(owner, repo).body?.stream()?.map { l -> l.name }?.toList()
+    fun getLabelsForRepo(org: String, repo: String): MutableList<String>? {
+        return githubClient.getLabelsForRepo(org, repo).body?.stream()
+            ?.map { l -> l.name }
+            ?.toList()
     }
 
     fun getLabelsForOrg(org: String): List<String> {
         val labels: CopyOnWriteArrayList<String> = CopyOnWriteArrayList<String>()
-        githubClient.getAllReposForOrg(org).body?.stream()?.forEach { repository ->
-            githubClient.getLabelsUrl(repository.labels_url).body?.stream()?.map { l -> labels.add(l.name) }?.toList()
+        githubClient.getAllReposForOrg(org).body?.stream()
+            ?.forEach { repository ->
+            val labelsUrl = githubClient.getLabelsForUrl(repository.labels_url)
+            labelsUrl.body?.stream()
+                ?.map { l -> labels.add(l.name) }
+                ?.toList()
+
+            if (labelsUrl.headers.containsKey("Link")) {
+                val lastPageNumber = getLastPageNumber(labelsUrl.headers)
+                if (lastPageNumber > 1) {
+                    var currentPage = 1
+                    while (currentPage <= lastPageNumber) {
+                        currentPage++
+                        githubClient.getLabelsForUrlAndPage(repository.labels_url, currentPage).body?.stream()
+                            ?.map { l -> labels.add(l.name) }
+                            ?.toList()
+                    }
+
+                }
+            }
         }
-        return Collections.unmodifiableList(labels)
+        return Collections.unmodifiableList(labels.distinct().sorted())
     }
 
     fun getIssuesForMarkedForContribution(org: String): MutableList<IssueSummary>? {
         val issueList: CopyOnWriteArrayList<IssueSummary> = CopyOnWriteArrayList<IssueSummary>()
-        val reposWithIssues = githubClient.getAllReposForOrg(org).body?.stream()?.filter(Repository::has_issues)
-            ?.map { repo -> repo.name }?.toList()
+        val reposWithIssues = githubClient.getAllReposForOrg(org).body?.stream()
+            ?.filter(Repository::has_issues)
+            ?.map { repo -> repo.name }
+            ?.toList()
 
-        reposWithIssues?.parallelStream()?.forEach { repoName ->
-            filterIssues(org, repoName, issueList)
-        }
+        reposWithIssues?.parallelStream()
+            ?.forEach { repoName -> filterIssues(org, repoName, issueList) }
         return issueList
     }
 
@@ -53,23 +80,28 @@ class GetLabelsService(private val githubClient: GithubClient) {
             ?.forEach { issue -> extractContributionIssues(issue, issueList, issue?.labels) }
 
         if (issuesForRepo.headers.containsKey("Link")) {
-            val lastPageNumber = getLastPageNumber(issuesForRepo)
-            if (lastPageNumber != "1") {
-                val issuesForRepoForPage = githubClient.getIssuesForRepoForPage(org, repoName, lastPageNumber)
-                issuesForRepoForPage.body?.parallelStream()
-                    ?.forEach { issue -> extractContributionIssues(issue, issueList, issue?.labels) }
+            val lastPageNumber = getLastPageNumber(issuesForRepo.headers)
+            if (lastPageNumber > 1) {
+                var currentPage = 1
+                while (currentPage <= lastPageNumber) {
+                    currentPage++
+                    val issuesForRepoForPage = githubClient.getIssuesForRepoForPage(org, repoName, currentPage)
+                    issuesForRepoForPage.body?.parallelStream()
+                        ?.forEach { issue -> extractContributionIssues(issue, issueList, issue?.labels) }
+                }
+
             }
         }
     }
 
-    private fun getLastPageNumber(issuesForRepo: ResponseEntity<List<Issue>>): String {
-        val lastPageUrl = regexExtractLast(issuesForRepo.headers.getFirst("Link"))
+    private fun getLastPageNumber(headers: HttpHeaders): Int {
+        val lastPageUrl = regexExtractLast(headers.getFirst("Link"))
         val indexOfPage = lastPageUrl?.indexOf("page=", 0)
         if (indexOfPage != null) {
-            return lastPageUrl.substring((indexOfPage + "page=".length), lastPageUrl.length)
+            return lastPageUrl.substring((indexOfPage + "page=".length), lastPageUrl.length).toInt()
 
         }
-        return "1" // there are no more pages, use page 1
+        return 1 // there are no more pages, use page 1
     }
 
     private fun extractContributionIssues(

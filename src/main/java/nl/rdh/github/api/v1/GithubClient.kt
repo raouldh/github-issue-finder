@@ -3,26 +3,28 @@ package nl.rdh.github.api.v1
 import nl.rdh.github.model.Issue
 import nl.rdh.github.model.Label
 import nl.rdh.github.model.Repository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
 
-private const val GITHUB_API = "https://api.github.com"
-private const val GITHUB_TOKEN = "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"
-
 @Component
-class GithubClient {
+class GithubClient(
+    @Value("\${github.api.token:#{null}}") val githubApiToken: String,
+    @Value("\${github.api.url:https://api.github.com}") val githubApiUrl: String) {
+
+
     private val apiClient: RestClient = RestClient.builder()
         .requestFactory(HttpComponentsClientHttpRequestFactory())
-        .defaultHeader("AUTHORIZATION", "token $GITHUB_TOKEN")
-        .baseUrl(GITHUB_API)
+        .defaultHeader("AUTHORIZATION", "token $githubApiToken")
+        .baseUrl(githubApiUrl)
         .build()
 
-    fun getLabelsForRepo(owner: String, repo: String): ResponseEntity<List<Label>> {
+    fun getLabelsForRepo(org: String, repo: String): ResponseEntity<List<Label>> {
         return apiClient.get()
-            .uri("/repos/{owner}/{repo}/labels", owner, repo)
+            .uri("/repos/{org}/{repo}/labels", org, repo)
             .retrieve()
             .toEntity<List<Label>>()
     }
@@ -34,22 +36,31 @@ class GithubClient {
             .toEntity<List<Repository>>()
     }
 
-    fun getLabelsUrl(labelsUrl: String): ResponseEntity<List<Label>> {
+    fun getLabelsForUrl(labelsUrl: String): ResponseEntity<List<Label>> {
         return apiClient.get()
-            .uri(labelsUrl.removePrefix(GITHUB_API).removeSuffix("{/name}"))
+            .uri(labelsUrl.removePrefix(githubApiUrl).removeSuffix("{/name}"))
             .retrieve()
             .toEntity<List<Label>>()
     }
 
-    fun getIssuesForRepo(owner: String, repo: String): ResponseEntity<List<Issue>> {
+    fun getLabelsForUrlAndPage(labelsUrl: String, page: Int): ResponseEntity<List<Label>> {
         return apiClient.get()
-            .uri("/repos/{owner}/{repo}/issues", owner, repo)
+            .uri(labelsUrl.removePrefix(githubApiUrl).removeSuffix("{/name}") + "?page={page}", page)
+            .retrieve()
+            .toEntity<List<Label>>()
+    }
+
+
+    fun getIssuesForRepo(org: String, repo: String): ResponseEntity<List<Issue>> {
+        return apiClient.get()
+            .uri("/repos/{org}/{repo}/issues", org, repo)
             .retrieve()
             .toEntity<List<Issue>>()
     }
-    fun getIssuesForRepoForPage(owner: String, repo: String, page:String): ResponseEntity<List<Issue>> {
+
+    fun getIssuesForRepoForPage(org: String, repo: String, page:Int): ResponseEntity<List<Issue>> {
         return apiClient.get()
-            .uri("/repos/{owner}/{repo}/issues?page={page}", owner, repo, page)
+            .uri("/repos/{org}/{repo}/issues?page={page}", org, repo, page)
             .retrieve()
             .toEntity<List<Issue>>()
     }
