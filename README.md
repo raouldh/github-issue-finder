@@ -11,7 +11,8 @@ And there are many GitHub repositories within an organization to search in.
 The hardcoded list of "open-for-contribution" labels are based on the spring-cloud and spring-projects organizations
 
 ## GET /contribution-issues/{org-name}
-Return a list of issues that have a label that is in the list of hardcoded open-for-contribution labels
+Return a list of issues that have a label that is in the list of hardcoded open-for-contribution labels.
+
 Note: loading a "big" organization might take some time ;)
 - Example url: http://localhost:8080/contribution-issues/spring-cloud
 
