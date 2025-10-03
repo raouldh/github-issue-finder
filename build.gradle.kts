@@ -19,6 +19,7 @@ dependencies {
     implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("org.kohsuke:github-api:1.326")
     implementation("org.slf4j:slf4j-api")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
