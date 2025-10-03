@@ -10,17 +10,16 @@ import org.springframework.web.bind.annotation.RestController
 class Controller(private val getLabelService: GetLabelsService) {
 
     @GetMapping("/labels/{org}/{repo}")
-    fun getLabelsForRepo(@PathVariable org: String, @PathVariable repo: String): MutableList<String>? {
-        return getLabelService.getLabelsForRepo(org, repo)
-    }
+    fun getLabelsForRepo(
+        @PathVariable org: String,
+        @PathVariable repo: String
+    ): List<String> = getLabelService.getLabelsForRepo(org, repo)
 
     @GetMapping("/labels/{org}")
-    fun getAllLabelsForOrg(@PathVariable org: String): List<String> {
-        return getLabelService.getLabelsForOrg(org)
-    }
+    fun getAllLabelsForOrg(@PathVariable org: String): List<String> =
+        getLabelService.getLabelsForOrg(org)
 
     @GetMapping("/contribution-issues/{org}")
-    fun getAllIssuesOpenForContributionForOrg(@PathVariable org: String): MutableList<IssueSummary>? {
-        return getLabelService.getIssuesForMarkedForContribution(org)
-    }
+    fun getAllIssuesOpenForContributionForOrg(@PathVariable org: String): List<IssueSummary> =
+        getLabelService.getIssuesForMarkedForContribution(org)
 }
