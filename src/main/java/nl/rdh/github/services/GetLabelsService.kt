@@ -1,7 +1,7 @@
 package nl.rdh.github.services
 
-import nl.rdh.github.client.GithubClient
 import nl.rdh.github.api.v1.model.IssueSummary
+import nl.rdh.github.client.GithubClient
 import nl.rdh.github.client.model.Issue
 import nl.rdh.github.client.model.Repository
 import org.springframework.http.HttpHeaders
@@ -10,93 +10,111 @@ import org.springframework.stereotype.Service
 @Service
 class GetLabelsService(private val githubClient: GithubClient) {
 
-    // This list is compiled from all unique labels for all spring-cloud and spring-projects repo's
-    private val openForContributionLabels: Set<String> = setOf(
-        "ideal-for-contribution",
-        "ideal-for-user-contribution",
-        "status: ideal-for-contribution",
-        "status: first-timers-only",
-        "status/first-timers-only",
-        "community contribution",
-        "contribution welcome",
-        "help wanted",
-        "first-timers-only",
-        "good first issue",
-        "type/help-needed"
-    )
+    private companion object {
+        const val LINK_HEADER = "Link"
+        const val PAGE_PARAM = "page="
+
+        // This list is compiled from all unique labels for all spring-cloud and spring-projects repo's
+        val OPEN_FOR_CONTRIBUTION_LABELS = setOf(
+            "ideal-for-contribution",
+            "ideal-for-user-contribution",
+            "status: ideal-for-contribution",
+            "status: first-timers-only",
+            "status/first-timers-only",
+            "community contribution",
+            "contribution welcome",
+            "help wanted",
+            "first-timers-only",
+            "good first issue",
+            "type/help-needed"
+        )
+    }
 
     fun getLabelsForRepo(org: String, repo: String): List<String> {
-        return githubClient.getLabelsForRepo(org, repo).body?.map { it.name }.orEmpty()
+        return githubClient.getLabelsForRepo(org, repo).body
+            ?.map { it.name }
+            .orEmpty()
     }
 
     fun getLabelsForOrg(org: String): List<String> {
-        val labels = mutableSetOf<String>()
-        githubClient.getAllReposForOrg(org).body?.forEach { repository ->
-                collectLabelsFromRepository(repository, labels)
+        val allRepos = githubClient.getAllReposForOrg(org).body ?: return emptyList()
+        
+        val labels = buildSet {
+            allRepos.forEach { repository ->
+                addAll(fetchAllLabelsForRepository(repository))
             }
-
+        }
+        
         return labels.sorted()
     }
 
-    private fun collectLabelsFromRepository(repository: Repository, labels: MutableSet<String>) {
-        val labelsUrl = githubClient.getLabelsForUrl(repository.labels_url)
-        labelsUrl.body?.mapTo(labels) { it.name }
-
-        labelsUrl.headers["Link"]?.let { linkHeader ->
-            val lastPageNumber = getLastPageNumber(labelsUrl.headers)
-            if (lastPageNumber > 1) {
-                (2..lastPageNumber).forEach { currentPage ->
-                    githubClient.getLabelsForUrlAndPage(
-                        repository.labels_url,
-                        currentPage
-                    ).body?.mapTo(labels) { it.name }
+    private fun fetchAllLabelsForRepository(repository: Repository): List<String> {
+        val firstPageResponse = githubClient.getLabelsForUrl(repository.labels_url)
+        val firstPageLabels = firstPageResponse.body?.map { it.name }.orEmpty()
+        
+        val additionalPages = firstPageResponse.headers[LINK_HEADER]?.let { linkHeader ->
+            val lastPage = getLastPageNumber(firstPageResponse.headers)
+            if (lastPage > 1) {
+                (2..lastPage).flatMap { page ->
+                    githubClient.getLabelsForUrlAndPage(repository.labels_url, page).body
+                        ?.map { it.name }
+                        .orEmpty()
                 }
+            } else {
+                emptyList()
             }
-        }
+        }.orEmpty()
+        
+        return firstPageLabels + additionalPages
     }
 
     fun getIssuesForMarkedForContribution(org: String): List<IssueSummary> {
-        val reposWithIssues =
-            githubClient.getAllReposForOrg(org).body?.filter { it.has_issues }
-                ?.map { it.name }.orEmpty()
+        val reposWithIssues = githubClient.getAllReposForOrg(org).body
+            ?.filter { it.has_issues }
+            ?.map { it.name }
+            .orEmpty()
 
-        return reposWithIssues.flatMap { repoName -> filterIssues(org, repoName) }
+        return reposWithIssues.flatMap { repoName ->
+            fetchIssuesForRepo(org, repoName)
+        }
     }
 
-    private fun filterIssues(org: String, repoName: String): List<IssueSummary> {
-        val issues = mutableListOf<IssueSummary>()
+    private fun fetchIssuesForRepo(org: String, repoName: String): List<IssueSummary> {
+        val firstPageResponse = githubClient.getIssuesForRepo(org, repoName)
+        val firstPageIssues = firstPageResponse.body
+            ?.mapNotNull { extractContributionIssue(it) }
+            .orEmpty()
 
-        val issuesForRepo = githubClient.getIssuesForRepo(org, repoName)
-        issuesForRepo.body?.mapNotNullTo(issues) { issue -> extractContributionIssue(issue) }
-
-        issuesForRepo.headers["Link"]?.let {
-            val lastPageNumber = getLastPageNumber(issuesForRepo.headers)
-            if (lastPageNumber > 1) {
-                (2..lastPageNumber).forEach { currentPage ->
-                    githubClient.getIssuesForRepoForPage(
-                        org,
-                        repoName,
-                        currentPage
-                    ).body?.mapNotNullTo(issues) { issue -> extractContributionIssue(issue) }
+        val additionalPages = firstPageResponse.headers[LINK_HEADER]?.let {
+            val lastPage = getLastPageNumber(firstPageResponse.headers)
+            if (lastPage > 1) {
+                (2..lastPage).flatMap { page ->
+                    githubClient.getIssuesForRepoForPage(org, repoName, page).body
+                        ?.mapNotNull { extractContributionIssue(it) }
+                        .orEmpty()
                 }
+            } else {
+                emptyList()
             }
-        }
+        }.orEmpty()
 
-        return issues
+        return firstPageIssues + additionalPages
     }
 
     private fun getLastPageNumber(headers: HttpHeaders): Int {
-        return headers.getFirst("Link")
-            ?.let { regexExtractLast(it) }
-            ?.substringAfter("page=")
-            ?.toIntOrNull() ?: 1
+        return headers.getFirst(LINK_HEADER)
+            ?.let { regexExtractLastPageUrl(it) }
+            ?.substringAfter(PAGE_PARAM)
+            ?.toIntOrNull()
+            ?: 1
     }
 
-    // Return IssueSummary? instead of side effects
     private fun extractContributionIssue(issue: Issue): IssueSummary? {
-        val hasContributionLabel =
-            issue.labels?.any { label -> label.name in openForContributionLabels }
-                ?: false
+        val labels = issue.labels ?: return null
+        
+        val hasContributionLabel = labels.any { label ->
+            label.name in OPEN_FOR_CONTRIBUTION_LABELS
+        }
 
         return if (hasContributionLabel) {
             IssueSummary(
@@ -105,14 +123,14 @@ class GetLabelsService(private val githubClient: GithubClient) {
                 title = issue.title,
                 state = issue.state.orEmpty(),
                 comments = issue.comments ?: 0,
-                labels = issue.labels?.map { it.name }.orEmpty()
+                labels = labels.map { it.name }
             )
         } else {
             null
         }
     }
 
-    private fun regexExtractLast(linkHeader: String): String? {
+    private fun regexExtractLastPageUrl(linkHeader: String): String? {
         val regex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
         return regex.find(linkHeader)?.groupValues?.getOrNull(1)
     }
