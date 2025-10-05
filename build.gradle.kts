@@ -1,8 +1,8 @@
 plugins {
-    id("org.springframework.boot") version "3.4.2"
-    id("io.spring.dependency-management") version "1.1.4"
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.spring") version "1.9.22"
+    id("org.springframework.boot") version "3.5.6"
+    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.spring") version "2.2.0"
 }
 
 group = "nl.rdh.github"
@@ -17,12 +17,11 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.httpcomponents.client5:httpclient5")
-    implementation("org.kohsuke:github-api:1.326")
     implementation("org.slf4j:slf4j-api")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation(platform("org.junit:junit-bom:5.14.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
