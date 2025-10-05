@@ -19,6 +19,7 @@ class GetLabelsService(private val githubClient: GithubClient) {
             "ideal-for-contribution",
             "ideal-for-user-contribution",
             "status: ideal-for-contribution",
+            "status: need-help-to-reproduce",
             "status: first-timers-only",
             "status/first-timers-only",
             "community contribution",
@@ -38,45 +39,42 @@ class GetLabelsService(private val githubClient: GithubClient) {
 
     fun getLabelsForOrg(org: String): List<String> {
         val allRepos = githubClient.getAllReposForOrg(org).body ?: return emptyList()
-        
+
         val labels = buildSet {
-            allRepos.forEach { repository ->
+            allRepos.parallelStream().forEach { repository ->
                 addAll(fetchAllLabelsForRepository(repository))
             }
         }
-        
+
         return labels.sorted()
     }
 
     private fun fetchAllLabelsForRepository(repository: Repository): List<String> {
         val firstPageResponse = githubClient.getLabelsForUrl(repository.labels_url)
         val firstPageLabels = firstPageResponse.body?.map { it.name }.orEmpty()
-        
+
         val additionalPages = firstPageResponse.headers[LINK_HEADER]?.let { linkHeader ->
             val lastPage = getLastPageNumber(firstPageResponse.headers)
-            if (lastPage > 1) {
-                (2..lastPage).flatMap { page ->
-                    githubClient.getLabelsForUrlAndPage(repository.labels_url, page).body
-                        ?.map { it.name }
-                        .orEmpty()
-                }
-            } else {
-                emptyList()
+            (2..lastPage).flatMap { page ->
+                githubClient.getLabelsForUrlAndPage(repository.labels_url, page).body
+                    ?.map { it.name }
+                    .orEmpty()
             }
         }.orEmpty()
-        
+
         return firstPageLabels + additionalPages
     }
 
     fun getIssuesForMarkedForContribution(org: String): List<IssueSummary> {
-        val reposWithIssues = githubClient.getAllReposForOrg(org).body
-            ?.filter { it.has_issues }
-            ?.map { it.name }
-            .orEmpty()
+        val reposWithIssues =
+            githubClient.getAllReposForOrg(org).body
+                ?.filter { it.has_issues }
+                ?.map { it.name }
+                .orEmpty()
 
-        return reposWithIssues.flatMap { repoName ->
-            fetchIssuesForRepo(org, repoName)
-        }
+        return reposWithIssues.parallelStream().flatMap { repoName ->
+            fetchIssuesForRepo(org, repoName).stream()
+        }.toList()
     }
 
     private fun fetchIssuesForRepo(org: String, repoName: String): List<IssueSummary> {
@@ -87,14 +85,10 @@ class GetLabelsService(private val githubClient: GithubClient) {
 
         val additionalPages = firstPageResponse.headers[LINK_HEADER]?.let {
             val lastPage = getLastPageNumber(firstPageResponse.headers)
-            if (lastPage > 1) {
-                (2..lastPage).flatMap { page ->
-                    githubClient.getIssuesForRepoForPage(org, repoName, page).body
-                        ?.mapNotNull { extractContributionIssue(it) }
-                        .orEmpty()
-                }
-            } else {
-                emptyList()
+            (2..lastPage).flatMap { page ->
+                githubClient.getIssuesForRepoForPage(org, repoName, page).body
+                    ?.mapNotNull { extractContributionIssue(it) }
+                    .orEmpty()
             }
         }.orEmpty()
 
@@ -111,7 +105,7 @@ class GetLabelsService(private val githubClient: GithubClient) {
 
     private fun extractContributionIssue(issue: Issue): IssueSummary? {
         val labels = issue.labels ?: return null
-        
+
         val hasContributionLabel = labels.any { label ->
             label.name in OPEN_FOR_CONTRIBUTION_LABELS
         }
