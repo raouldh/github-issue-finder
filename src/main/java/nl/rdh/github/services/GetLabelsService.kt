@@ -80,7 +80,21 @@ class GetLabelsService(private val githubClient: GithubClient) {
         val firstPageResponse = githubClient.getIssuesForRepo(org, repoName)
         val firstPageIssues = firstPageResponse
             .bodyAsList()
-            .mapNotNull { extractContributionIssue(it) }
+            .filter {
+                it.labels
+                    .orEmpty()
+                    .any { label -> label.name in OPEN_FOR_CONTRIBUTION_LABELS }
+            }
+            .map { issue ->
+                IssueSummary(
+                    url = issue.url,
+                    htmlUrl = issue.html_url,
+                    title = issue.title,
+                    state = issue.state.orEmpty(),
+                    comments = issue.comments ?: 0,
+                    labels = issue.labels.orEmpty().map { it.name }
+                )
+            }
 
         val additionalPages = firstPageResponse.headers[LINK_HEADER]
             ?.let {
@@ -105,24 +119,24 @@ class GetLabelsService(private val githubClient: GithubClient) {
         ?: 1
 
     private fun extractContributionIssue(issue: Issue): IssueSummary? {
-        val labels = issue.labels ?: return null
+        val labels = issue.labels ?: emptyList()
 
         val hasContributionLabel = labels.any { label ->
             label.name in OPEN_FOR_CONTRIBUTION_LABELS
         }
 
-        return if (hasContributionLabel) {
-            IssueSummary(
-                url = issue.url,
-                htmlUrl = issue.html_url,
-                title = issue.title,
-                state = issue.state.orEmpty(),
-                comments = issue.comments ?: 0,
-                labels = labels.map { it.name }
-            )
-        } else {
-            null
-        }
+        return hasContributionLabel
+            .takeIf { it }
+            ?.let {
+                IssueSummary(
+                    url = issue.url,
+                    htmlUrl = issue.html_url,
+                    title = issue.title,
+                    state = issue.state.orEmpty(),
+                    comments = issue.comments ?: 0,
+                    labels = labels.map { it.name }
+                )
+            }
     }
 
     private fun regexExtractLastPageUrl(linkHeader: String) = lastPageUrlRegex
