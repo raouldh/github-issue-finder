@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@Tag(name = "GitHub repo contribution issues", description = "API for retrieving GitHub issues that are open for contribution")
+@Tag(
+    name = "GitHub repo contribution issues",
+    description = "API for retrieving GitHub issues that are open for contribution"
+)
 class Controller(private val getLabelService: GetLabelsService) {
 
     @GetMapping("/labels/{org}/{repo}")
@@ -40,7 +43,7 @@ class Controller(private val getLabelService: GetLabelsService) {
         @Parameter(description = "GitHub organization name", required = true, example = "spring-projects")
         @PathVariable org: String,
         @Parameter(description = "GitHub repository name", required = true, example = "spring-boot")
-        @PathVariable repo: String
+        @PathVariable repo: String,
     ): List<String> = getLabelService.getLabelsForRepo(org, repo)
 
     @GetMapping("/labels/{org}")
@@ -63,8 +66,8 @@ class Controller(private val getLabelService: GetLabelsService) {
     )
     fun getAllLabelsForOrg(
         @Parameter(description = "GitHub organization name", required = true, example = "spring-projects")
-        @PathVariable org: String
-    ): List<String> = getLabelService.getLabelsForOrg(org)
+        @PathVariable org: String,
+    ) = getLabelService.getLabelsForOrg(org)
 
     @GetMapping("/contribution-issues/{org}")
     @Operation(
@@ -86,6 +89,6 @@ class Controller(private val getLabelService: GetLabelsService) {
     )
     fun getAllIssuesOpenForContributionForOrg(
         @Parameter(description = "GitHub organization name", required = true, example = "spring-projects")
-        @PathVariable org: String
+        @PathVariable org: String,
     ): List<IssueSummary> = getLabelService.getIssuesForMarkedForContribution(org)
 }

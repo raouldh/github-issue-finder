@@ -34,50 +34,47 @@ class GetLabelsService(private val githubClient: GithubClient) {
         val lastPageUrlRegex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
     }
 
-    fun getLabelsForRepo(org: String, repo: String): List<String> {
-        return githubClient.getLabelsForRepo(org, repo).bodyAsList()
-            ?.map { it.name }
-            .orEmpty()
-    }
+    fun getLabelsForRepo(org: String, repo: String) = githubClient
+        .getLabelsForRepo(org, repo)
+        .bodyAsList()
+        .map { it.name }
 
-    fun getLabelsForOrg(org: String): List<String> {
-        val allRepos = githubClient.getAllReposForOrg(org).bodyAsList()
-
-        val labels = buildSet {
-            allRepos.parallelStream().forEach { repository ->
-                addAll(fetchAllLabelsForRepository(repository))
-            }
-        }
-
-        return labels.sorted()
-    }
+    fun getLabelsForOrg(org: String) = githubClient
+        .getAllReposForOrg(org)
+        .bodyAsList()
+        .parallelStream()
+        .flatMap { fetchAllLabelsForRepository(it).stream() }
+        .sorted()
+        .toList()
 
     private fun fetchAllLabelsForRepository(repository: Repository): List<String> {
         val firstPageResponse = githubClient.getLabelsForUrl(repository.labels_url)
         val firstPageLabels = firstPageResponse.bodyAsList().map { it.name }
 
-        val additionalPages = firstPageResponse.headers[LINK_HEADER]?.let { linkHeader ->
-            val lastPage = getLastPageNumber(firstPageResponse.headers)
-            (2..lastPage).flatMap { page ->
-                githubClient.getLabelsForUrlAndPage(repository.labels_url, page).bodyAsList()
-                    .map { it.name }
+        val additionalPages = firstPageResponse.headers[LINK_HEADER]
+            ?.let { linkHeader ->
+                val lastPage = getLastPageNumber(firstPageResponse.headers)
+                (2..lastPage)
+                    .flatMap { page ->
+                        githubClient
+                            .getLabelsForUrlAndPage(repository.labels_url, page)
+                            .bodyAsList()
+                            .map { it.name }
+                    }
             }
-        }.orEmpty()
+            .orEmpty()
 
         return firstPageLabels + additionalPages
     }
 
-    fun getIssuesForMarkedForContribution(org: String): List<IssueSummary> {
-        val reposWithIssues =
-            githubClient.getAllReposForOrg(org)
-                .bodyAsList()
-                .filter { it.has_issues }
-                .map { it.name }
-
-        return reposWithIssues.parallelStream().flatMap { repoName ->
-            fetchIssuesForRepo(org, repoName).stream()
-        }.toList()
-    }
+    fun getIssuesForMarkedForContribution(org: String) = githubClient
+        .getAllReposForOrg(org)
+        .bodyAsList()
+        .filter { it.has_issues }
+        .map { it.name }
+        .parallelStream()
+        .flatMap { repoName -> fetchIssuesForRepo(org, repoName).stream() }
+        .toList()
 
     private fun fetchIssuesForRepo(org: String, repoName: String): List<IssueSummary> {
         val firstPageResponse = githubClient.getIssuesForRepo(org, repoName)
@@ -85,25 +82,27 @@ class GetLabelsService(private val githubClient: GithubClient) {
             .bodyAsList()
             .mapNotNull { extractContributionIssue(it) }
 
-        val additionalPages = firstPageResponse.headers[LINK_HEADER]?.let {
-            val lastPage = getLastPageNumber(firstPageResponse.headers)
-            (2..lastPage).flatMap { page ->
-                githubClient.getIssuesForRepoForPage(org, repoName, page)
-                    .bodyAsList()
-                    .mapNotNull { extractContributionIssue(it) }
+        val additionalPages = firstPageResponse.headers[LINK_HEADER]
+            ?.let {
+                val lastPage = getLastPageNumber(firstPageResponse.headers)
+                (2..lastPage)
+                    .flatMap { page ->
+                        githubClient.getIssuesForRepoForPage(org, repoName, page)
+                            .bodyAsList()
+                            .mapNotNull { extractContributionIssue(it) }
+                    }
             }
-        }.orEmpty()
+            .orEmpty()
 
         return firstPageIssues + additionalPages
     }
 
-    private fun getLastPageNumber(headers: HttpHeaders): Int {
-        return headers.getFirst(LINK_HEADER)
-            ?.let { regexExtractLastPageUrl(it) }
-            ?.substringAfter(PAGE_PARAM)
-            ?.toIntOrNull()
-            ?: 1
-    }
+    private fun getLastPageNumber(headers: HttpHeaders) = headers
+        .getFirst(LINK_HEADER)
+        ?.let { regexExtractLastPageUrl(it) }
+        ?.substringAfter(PAGE_PARAM)
+        ?.toIntOrNull()
+        ?: 1
 
     private fun extractContributionIssue(issue: Issue): IssueSummary? {
         val labels = issue.labels ?: return null
