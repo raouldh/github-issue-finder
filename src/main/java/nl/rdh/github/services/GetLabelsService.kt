@@ -30,6 +30,8 @@ class GetLabelsService(private val githubClient: GithubClient) {
             "good first issue",
             "type/help-needed"
         )
+
+        val lastPageUrlRegex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
     }
 
     fun getLabelsForRepo(org: String, repo: String): List<String> {
@@ -124,8 +126,9 @@ class GetLabelsService(private val githubClient: GithubClient) {
         }
     }
 
-    private fun regexExtractLastPageUrl(linkHeader: String): String? {
-        val regex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
-        return regex.find(linkHeader)?.groupValues?.getOrNull(1)
-    }
+    private fun regexExtractLastPageUrl(linkHeader: String) = lastPageUrlRegex
+        .find(linkHeader)
+        ?.groupValues
+        ?.getOrNull(1)
+
 }
