@@ -5,7 +5,6 @@ import nl.rdh.github.bodyAsList
 import nl.rdh.github.client.GithubClient
 import nl.rdh.github.client.model.Issue
 import nl.rdh.github.client.model.Repository
-import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 
 @Service
@@ -44,6 +43,7 @@ class GetLabelsService(private val githubClient: GithubClient) {
         .bodyAsList()
         .parallelStream()
         .flatMap { fetchAllLabelsForRepository(it).stream() }
+        .distinct()
         .sorted()
         .toList()
 
@@ -53,7 +53,7 @@ class GetLabelsService(private val githubClient: GithubClient) {
 
         val additionalPages = firstPageResponse.headers[LINK_HEADER]
             ?.let { linkHeader ->
-                val lastPage = getLastPageNumber(firstPageResponse.headers)
+                val lastPage = getLastPageNumber(linkHeader)
                 (2..lastPage)
                     .flatMap { page ->
                         githubClient
@@ -98,7 +98,7 @@ class GetLabelsService(private val githubClient: GithubClient) {
 
         val additionalPages = firstPageResponse.headers[LINK_HEADER]
             ?.let {
-                val lastPage = getLastPageNumber(firstPageResponse.headers)
+                val lastPage = getLastPageNumber(it)
                 (2..lastPage)
                     .flatMap { page ->
                         githubClient.getIssuesForRepoForPage(org, repoName, page)
@@ -111,8 +111,8 @@ class GetLabelsService(private val githubClient: GithubClient) {
         return firstPageIssues + additionalPages
     }
 
-    private fun getLastPageNumber(headers: HttpHeaders) = headers
-        .getFirst(LINK_HEADER)
+    private fun getLastPageNumber(linkHeaderValues: List<String>) = linkHeaderValues
+        .firstOrNull()
         ?.let { regexExtractLastPageUrl(it) }
         ?.substringAfter(PAGE_PARAM)
         ?.toIntOrNull()
