@@ -6,7 +6,7 @@ import nl.rdh.github.bodyAsList
 import nl.rdh.github.client.GithubClient
 import nl.rdh.github.client.model.Label
 import nl.rdh.github.client.model.Repository
-import nl.rdh.github.client.model.labelNames
+import nl.rdh.github.client.model.distinctLabelNames
 import nl.rdh.github.flatMapParallel
 import org.springframework.stereotype.Service
 
@@ -17,20 +17,19 @@ class GetLabelsService(private val githubClient: GithubClient) {
         .getAllReposForOrg(org)
         .bodyAsList()
         .flatMapParallel { fetchAllLabelsForRepository(it) }
-        .labelNames()
+        .distinctLabelNames()
 
     fun getLabelsForRepo(org: String, repo: String) = githubClient
         .getLabelsForRepo(org, repo)
         .bodyAsList()
-        .labelNames()
+        .distinctLabelNames()
 
     private fun fetchAllLabelsForRepository(repository: Repository): List<Label> {
         val request = GithubPagedRequest(
             { githubClient.getLabelsForUrl(repository.labels_url) },
             { githubClient.getLabelsForUrlAndPage(repository.labels_url, it) }
         )
-        return request
-            .getResponses()
+        return request.execute()
             .flatMap { it.bodyAsList() }
     }
 
@@ -47,7 +46,7 @@ class GetLabelsService(private val githubClient: GithubClient) {
         )
 
         return request
-            .getResponses()
+            .execute()
             .flatMap { it.bodyAsList() }
             .filter { it.isOpenForContribution }
             .map { it.toSummary() }
