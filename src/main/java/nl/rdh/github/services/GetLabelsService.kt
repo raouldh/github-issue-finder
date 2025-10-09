@@ -4,6 +4,7 @@ import nl.rdh.github.api.v1.model.IssueSummary
 import nl.rdh.github.api.v1.model.toSummary
 import nl.rdh.github.bodyAsList
 import nl.rdh.github.client.GithubClient
+import nl.rdh.github.client.model.Issue
 import nl.rdh.github.client.model.Label
 import nl.rdh.github.client.model.Repository
 import nl.rdh.github.client.model.distinctLabelNames
@@ -30,7 +31,6 @@ class GetLabelsService(private val githubClient: GithubClient) {
             { githubClient.getLabelsForUrlAndPage(repository.labels_url, it) }
         )
         return request.execute()
-            .flatMap { it.bodyAsList() }
     }
 
     fun getIssuesForMarkedForContribution(org: String): List<IssueSummary> = githubClient
@@ -38,8 +38,9 @@ class GetLabelsService(private val githubClient: GithubClient) {
         .bodyAsList()
         .filter { it.has_issues }
         .flatMapParallel { repository -> fetchIssuesForRepo(org, repository.name) }
+        .map { it.toSummary() }
 
-    private fun fetchIssuesForRepo(org: String, repoName: String): List<IssueSummary> {
+    private fun fetchIssuesForRepo(org: String, repoName: String): List<Issue> {
         val request = GithubPagedRequest(
             { githubClient.getIssuesForRepo(org, repoName) },
             { githubClient.getIssuesForRepoForPage(org, repoName, it) }
@@ -47,8 +48,6 @@ class GetLabelsService(private val githubClient: GithubClient) {
 
         return request
             .execute()
-            .flatMap { it.bodyAsList() }
             .filter { it.isOpenForContribution }
-            .map { it.toSummary() }
     }
 }
