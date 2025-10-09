@@ -15,13 +15,8 @@ class GetLabelsService(private val githubClient: GithubClient) {
     fun getLabelsForOrg(org: String): List<String> = githubClient
         .getAllReposForOrg(org)
         .bodyAsList()
-        .flatMapParallel { fetchAllLabelsForRepository(it) }
+        .flatMapParallel { fetchLabelsForRepo(it) }
         .distinctLabelNames()
-
-    private fun fetchAllLabelsForRepository(repository: Repository) = GithubPagedRequest(
-        { githubClient.getLabelsForUrl(repository.labels_url) },
-        { githubClient.getLabelsForUrlAndPage(repository.labels_url, it) }
-    ).execute()
 
     fun getLabelsForRepo(org: String, repo: String) = githubClient
         .getLabelsForRepo(org, repo)
@@ -32,12 +27,17 @@ class GetLabelsService(private val githubClient: GithubClient) {
         .getAllReposForOrg(org)
         .bodyAsList()
         .filter { it.has_issues }
-        .flatMapParallel { repository -> fetchIssuesForRepo(org, repository.name) }
+        .flatMapParallel { repository -> fetchIssuesForRepo(repository, org) }
         .filter { it.isOpenForContribution }
         .map { it.toSummary() }
 
-    private fun fetchIssuesForRepo(org: String, repoName: String) = GithubPagedRequest(
-        { githubClient.getIssuesForRepo(org, repoName) },
-        { githubClient.getIssuesForRepoForPage(org, repoName, it) }
+    private fun fetchLabelsForRepo(repository: Repository) = GithubPagedRequest(
+        { githubClient.getLabelsForUrl(repository.labels_url) },
+        { githubClient.getLabelsForUrlAndPage(repository.labels_url, it) }
+    ).execute()
+
+    private fun fetchIssuesForRepo(repository: Repository, org: String) = GithubPagedRequest(
+        { githubClient.getIssuesForRepo(org, repository.name) },
+        { githubClient.getIssuesForRepoForPage(org, repository.name, it) }
     ).execute()
 }
