@@ -19,7 +19,7 @@ class GetLabelsService(private val githubClient: GithubClient) {
         .labelNames()
 
     fun getLabelsForRepo(org: String, repo: String) = githubClient
-        .getLabelsForRepo(org, repo)
+        .getLabelsForRepo(org, repo) // TODO [MvdB]: Deze haalt alleen de eerste pagina op
         .bodyAsList()
         .labelNames()
 

@@ -5,23 +5,16 @@ import nl.rdh.github.mapParallel
 import org.springframework.http.ResponseEntity
 import org.springframework.util.MultiValueMap
 
+const val x = """
+<https://api.github.com/repositories/2090979/labels?per_page=2&page=2>; rel="next", <https://api.github.com/repositories/2090979/labels?per_page=2&page=35>; rel="last"
+"""
+
 data class GithubResponse(
     val response: ResponseEntity<*>,
 ) {
     private val headers: MultiValueMap<String, String> = response.headers
-    private val linkHeaderValues: List<String?> = headers[LINK_HEADER].orEmpty()
-
-    val lastPageNumber = linkHeaderValues
-        .firstOrNull()
-        ?.let { regexExtractLastPageUrl(it) }
-        ?.substringAfter(PAGE_PARAM)
-        ?.toIntOrNull()
-        ?: 1
-
-    private fun regexExtractLastPageUrl(linkHeader: String) = lastPageUrlRegex
-        .find(linkHeader)
-        ?.groupValues
-        ?.getOrNull(1)
+    val lastPageNumber
+        get() = GithubLinkHeader(headers[LINK_HEADER].orEmpty<String>().firstOrNull()).lastPageNumber
 
     fun <T> mapAdditionalPages(block: (Int) -> T): List<T> = (2..lastPageNumber)
         .toList()
@@ -33,8 +26,6 @@ data class GithubResponse(
 
     companion object {
         const val LINK_HEADER = "Link"
-        const val PAGE_PARAM = "page="
-        val lastPageUrlRegex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
     }
 }
 

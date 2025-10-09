@@ -13,7 +13,7 @@ import org.springframework.web.client.toEntity
 @Component
 class GithubClient(
     @param:Value("\${github.api.token:}") private val githubApiToken: String?,
-    @param:Value("\${github.api.url:https://api.github.com}") private val githubApiUrl: String
+    @param:Value("\${github.api.url:https://api.github.com}") private val githubApiUrl: String,
 ) {
 
     private val apiClient: RestClient = buildRestClient()
@@ -21,11 +21,11 @@ class GithubClient(
     private fun buildRestClient(): RestClient {
         val restClientBuilder = RestClient.builder()
             .requestFactory(HttpComponentsClientHttpRequestFactory())
-        
+
         githubApiToken?.takeIf { it.isNotBlank() }?.let { token ->
             restClientBuilder.defaultHeader("AUTHORIZATION", "token $token")
         }
-        
+
         return restClientBuilder
             .baseUrl(githubApiUrl)
             .build()
