@@ -5,7 +5,7 @@ data class Label(
     val default: Boolean?, val description: String?,
 )
 
-fun List<Label>.distinctLabelNames(): List<String> = this
+fun List<Label>.labelNames(): List<String> = this
     .map { it.name }
     .distinct()
     .sorted()
