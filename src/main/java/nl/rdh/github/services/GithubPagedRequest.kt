@@ -10,10 +10,10 @@ data class GithubPagedRequest<T>(
     fun execute(): List<T> {
         val firstResponse = initialCall()
 
-        val otherPageResponses = firstResponse
+        val otherPageData = firstResponse
             .toGithubResponse()
-            .mapAdditionalPages { callForPage(it) }
+            .flatMapAdditionalPages { callForPage(it).bodyAsList() }
 
-        return firstResponse.bodyAsList() + otherPageResponses.flatMap { it.bodyAsList() }
+        return firstResponse.bodyAsList() + otherPageData
     }
 }
