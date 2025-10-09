@@ -37,21 +37,21 @@ class GithubClient(
             .retrieve()
             .toEntity()
 
+    fun getLabelsForRepo(org: String, repo: String, page: Int): ResponseEntity<List<Label>> =
+        apiClient.get()
+            .uri("/repos/{org}/{repo}/labels?page={page}", org, repo, page)
+            .retrieve()
+            .toEntity()
+
     fun getAllReposForOrg(org: String): ResponseEntity<List<Repository>> =
         apiClient.get()
             .uri("/orgs/{org}/repos", org)
             .retrieve()
             .toEntity()
 
-    fun getLabelsForUrl(labelsUrl: String): ResponseEntity<List<Label>> =
+    fun getAllReposForOrg(org: String, page: Int): ResponseEntity<List<Repository>> =
         apiClient.get()
-            .uri(labelsUrl.removePrefix(githubApiUrl).removeSuffix("{/name}"))
-            .retrieve()
-            .toEntity()
-
-    fun getLabelsForUrlAndPage(labelsUrl: String, page: Int): ResponseEntity<List<Label>> =
-        apiClient.get()
-            .uri("${labelsUrl.removePrefix(githubApiUrl).removeSuffix("{/name}")}?page={page}", page)
+            .uri("/orgs/{org}/repos?page={page}", org, page)
             .retrieve()
             .toEntity()
 
