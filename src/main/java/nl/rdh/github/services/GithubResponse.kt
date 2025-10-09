@@ -1,5 +1,7 @@
 package nl.rdh.github.services
 
+import nl.rdh.github.flatMapParallel
+import nl.rdh.github.mapParallel
 import org.springframework.http.ResponseEntity
 import org.springframework.util.MultiValueMap
 
@@ -21,11 +23,13 @@ data class GithubResponse(
         ?.groupValues
         ?.getOrNull(1)
 
-    fun <T> mapAdditionalPage(block: (Int) -> T) = (2..lastPageNumber)
-        .map { page -> block(page) }
+    fun <T> mapAdditionalPages(block: (Int) -> T): List<T> = (2..lastPageNumber)
+        .toList()
+        .mapParallel { page -> block(page) }
 
     fun <T> flatMapAdditionalPages(block: (Int) -> List<T>): List<T> = (2..lastPageNumber)
-        .flatMap { page -> block(page) }
+        .toList()
+        .flatMapParallel { page -> block(page) }
 
     companion object {
         const val LINK_HEADER = "Link"
@@ -33,5 +37,6 @@ data class GithubResponse(
         val lastPageUrlRegex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
     }
 }
+
 
 fun ResponseEntity<*>.toGithubResponse() = GithubResponse(this)
