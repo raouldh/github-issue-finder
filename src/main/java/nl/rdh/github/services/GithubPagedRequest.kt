@@ -7,8 +7,12 @@ data class GithubPagedRequest<T>(
     val callForPage: (Int) -> ResponseEntity<T>,
 ) {
     fun getResponses(): List<ResponseEntity<T>> {
-        return initialCall()
+        val firstResponse = initialCall()
+
+        val otherPageResponses = firstResponse
             .toGithubResponse()
             .mapAdditionalPages { callForPage(it) }
+
+        return listOf(firstResponse) + otherPageResponses
     }
 }
