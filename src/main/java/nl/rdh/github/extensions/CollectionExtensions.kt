@@ -1,4 +1,4 @@
-package nl.rdh.github
+package nl.rdh.github.extensions
 
 fun <T, U> Collection<T>.mapParallel(block: (T) -> U): List<U> = this
     .parallelStream()

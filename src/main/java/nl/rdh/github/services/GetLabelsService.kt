@@ -3,7 +3,7 @@ package nl.rdh.github.services
 import nl.rdh.github.api.v1.model.IssueSummary
 import nl.rdh.github.api.v1.model.toSummary
 import nl.rdh.github.client.model.labelNames
-import nl.rdh.github.flatMapParallel
+import nl.rdh.github.extensions.flatMapParallel
 import org.springframework.stereotype.Service
 
 @Service

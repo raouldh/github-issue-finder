@@ -1,4 +1,4 @@
-package nl.rdh.github
+package nl.rdh.github.extensions
 
 import org.springframework.http.ResponseEntity
 

@@ -1,10 +1,10 @@
 package nl.rdh.github.services
 
-import nl.rdh.github.bodyAsList
 import nl.rdh.github.client.GithubClient
 import nl.rdh.github.client.model.Repository
-import nl.rdh.github.flatMapParallel
-import nl.rdh.github.mapParallel
+import nl.rdh.github.extensions.bodyAsList
+import nl.rdh.github.extensions.flatMapParallel
+import nl.rdh.github.extensions.mapParallel
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.util.MultiValueMap
