@@ -4,10 +4,8 @@ import nl.rdh.github.client.GithubClient
 import nl.rdh.github.client.model.Repository
 import nl.rdh.github.extensions.bodyAsList
 import nl.rdh.github.extensions.flatMapParallel
-import nl.rdh.github.extensions.mapParallel
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import org.springframework.util.MultiValueMap
 
 @Service
 class GithubClientService(private val githubClient: GithubClient) {
@@ -21,7 +19,6 @@ class GithubClientService(private val githubClient: GithubClient) {
         { githubClient.getLabelsForRepo(org, repository) },
         { githubClient.getLabelsForRepo(org, repository, it) }
     ).execute()
-
 
     fun fetchIssuesForRepo(repository: Repository, org: String) = GithubPagedRequest(
         { githubClient.getIssuesForRepo(org, repository.name) },
@@ -45,20 +42,10 @@ class GithubClientService(private val githubClient: GithubClient) {
     private data class GithubResponse(
         val response: ResponseEntity<*>,
     ) {
-        private val headers: MultiValueMap<String, String> = response.headers
-        val lastPageNumber
-            get() = GithubLinkHeader(headers[LINK_HEADER].orEmpty<String>().firstOrNull()).lastPageNumber
-
-        fun <T> mapAdditionalPages(block: (Int) -> T): List<T> = (2..lastPageNumber)
-            .toList()
-            .mapParallel { page -> block(page) }
+        val lastPageNumber = GithubLinkHeader.from(response.headers).lastPageNumber
 
         fun <T> flatMapAdditionalPages(block: (Int) -> List<T>): List<T> = (2..lastPageNumber)
             .toList()
             .flatMapParallel { page -> block(page) }
-
-        companion object {
-            const val LINK_HEADER = "Link"
-        }
     }
 }

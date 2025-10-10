@@ -1,10 +1,11 @@
 package nl.rdh.github.services
 
+import org.springframework.util.MultiValueMap
 import org.springframework.web.util.UriComponentsBuilder.fromUriString
 
-data class GithubLinkHeader(private val header: String?) {
+data class GithubLinkHeader(private val headerValue: String?) {
     val lastPageNumber
-        get() = header
+        get() = headerValue
             ?.let {
                 lastPageUrlRegex
                     .find(it)
@@ -21,7 +22,12 @@ data class GithubLinkHeader(private val header: String?) {
             ?: 1
 
     companion object {
-        const val PAGE_PARAM = "page"
-        val lastPageUrlRegex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
+        private const val LINK_HEADER_NAME = "Link"
+        private const val PAGE_PARAM = "page"
+        private val lastPageUrlRegex = """<([^>]+)>;\s*rel="last"""".toRegex(RegexOption.IGNORE_CASE)
+
+        fun from(headers: MultiValueMap<String, String>): GithubLinkHeader {
+            return GithubLinkHeader(headers[LINK_HEADER_NAME].orEmpty<String>().firstOrNull())
+        }
     }
 }
