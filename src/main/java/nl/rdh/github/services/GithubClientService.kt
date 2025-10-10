@@ -39,9 +39,7 @@ class GithubClientService(private val githubClient: GithubClient) {
         private fun ResponseEntity<*>.toGithubResponse() = GithubResponse(this)
     }
 
-    private data class GithubResponse(
-        val response: ResponseEntity<*>,
-    ) {
+    private data class GithubResponse(val response: ResponseEntity<*>) {
         val lastPageNumber = GithubLinkHeader.from(response.headers).lastPageNumber
 
         fun <T> flatMapAdditionalPages(block: (Int) -> List<T>): List<T> = (2..lastPageNumber)
