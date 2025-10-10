@@ -18,52 +18,31 @@ class GithubClient(
 
     private val apiClient: RestClient = buildRestClient()
 
-    private fun buildRestClient(): RestClient {
-        val restClientBuilder = RestClient.builder()
-            .requestFactory(HttpComponentsClientHttpRequestFactory())
-
-        githubApiToken?.takeIf { it.isNotBlank() }?.let { token ->
-            restClientBuilder.defaultHeader("AUTHORIZATION", "token $token")
-        }
-
-        return restClientBuilder
-            .baseUrl(githubApiUrl)
-            .build()
-    }
-
-    fun getLabelsForRepo(org: String, repo: String): ResponseEntity<List<Label>> =
+    fun getLabelsForRepo(org: String, repo: String, page: Int? = null): ResponseEntity<List<Label>> =
         apiClient.get()
-            .uri("/repos/{org}/{repo}/labels", org, repo)
+            .uri("/repos/{org}/{repo}/labels{pageParam}", org, repo, getPageParam(page))
             .retrieve()
             .toEntity()
 
-    fun getLabelsForRepo(org: String, repo: String, page: Int): ResponseEntity<List<Label>> =
+    fun getAllReposForOrg(org: String, page: Int? = null): ResponseEntity<List<Repository>> =
         apiClient.get()
-            .uri("/repos/{org}/{repo}/labels?page={page}", org, repo, page)
+            .uri("/orgs/{org}/repos{pageParam}", org, getPageParam(page))
             .retrieve()
             .toEntity()
 
-    fun getAllReposForOrg(org: String): ResponseEntity<List<Repository>> =
+    fun getIssuesForRepo(org: String, repo: String, page: Int? = null): ResponseEntity<List<Issue>> =
         apiClient.get()
-            .uri("/orgs/{org}/repos", org)
+            .uri("/repos/{org}/{repo}/issues?page={page}", org, repo, getPageParam(page))
             .retrieve()
             .toEntity()
 
-    fun getAllReposForOrg(org: String, page: Int): ResponseEntity<List<Repository>> =
-        apiClient.get()
-            .uri("/orgs/{org}/repos?page={page}", org, page)
-            .retrieve()
-            .toEntity()
+    private fun getPageParam(page: Int?) = page?.let { "?page={it}" } ?: ""
 
-    fun getIssuesForRepo(org: String, repo: String): ResponseEntity<List<Issue>> =
-        apiClient.get()
-            .uri("/repos/{org}/{repo}/issues", org, repo)
-            .retrieve()
-            .toEntity()
-
-    fun getIssuesForRepoForPage(org: String, repo: String, page: Int): ResponseEntity<List<Issue>> =
-        apiClient.get()
-            .uri("/repos/{org}/{repo}/issues?page={page}", org, repo, page)
-            .retrieve()
-            .toEntity()
+    private fun buildRestClient() = RestClient.builder()
+        .requestFactory(HttpComponentsClientHttpRequestFactory())
+        .baseUrl(githubApiUrl)
+        .also { builder ->
+            if (githubApiToken.isNullOrBlank().not())
+                builder.defaultHeader("AUTHORIZATION", "token ${githubApiToken}")
+        }.build()
 }
