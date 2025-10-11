@@ -3,7 +3,7 @@ package nl.rdh.github.services
 import nl.rdh.github.client.GithubClient
 import nl.rdh.github.client.model.Repository
 import nl.rdh.github.extensions.bodyAsList
-import nl.rdh.github.extensions.flatMapParallel
+import nl.rdh.github.extensions.parallelFlatMap
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
@@ -36,7 +36,7 @@ class GithubClientService(private val githubClient: GithubClient) {
                     .flatMapAdditionalPages { pageNumber -> callForPage(pageNumber).bodyAsList() }
             }
 
-        private fun ResponseEntity<*>.toGithubResponse() = GithubResponse(this)
+        private fun ResponseEntity<*>.toGithubResponse(): GithubResponse = GithubResponse(this)
     }
 
     private data class GithubResponse(val response: ResponseEntity<*>) {
@@ -44,6 +44,6 @@ class GithubClientService(private val githubClient: GithubClient) {
 
         fun <T> flatMapAdditionalPages(block: (Int) -> List<T>): List<T> = (2..lastPageNumber)
             .toList()
-            .flatMapParallel { page -> block(page) }
+            .parallelFlatMap { page -> block(page) }
     }
 }
