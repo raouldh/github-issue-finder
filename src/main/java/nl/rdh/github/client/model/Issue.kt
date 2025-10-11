@@ -46,6 +46,8 @@ data class Issue(
         val OPEN_FOR_CONTRIBUTION_LABELS = setOf(
             "ideal-for-contribution",
             "ideal-for-user-contribution",
+            "meta: contributions welcome",
+            "meta: first timers only",
             "status: ideal-for-contribution",
             "status: need-help-to-reproduce",
             "status: first-timers-only",
@@ -53,6 +55,7 @@ data class Issue(
             "community contribution",
             "contribution welcome",
             "help wanted",
+            "help-wanted",
             "first-timers-only",
             "good first issue",
             "type/help-needed"
