@@ -31,5 +31,34 @@ data class Issue(
     val title: String,
     val updated_at: String?,
     val url: String,
-    val user: User?
-)
+    val user: User?,
+) {
+    val isOpenForContribution = hasAnyLabelIn(OPEN_FOR_CONTRIBUTION_LABELS)
+
+    val labelNames = this.labels.orEmpty().map { it.name }
+
+    fun hasAnyLabelIn(labels: Collection<String>) = this.labels
+        .orEmpty()
+        .any { label -> label.name in labels }
+
+    private companion object {
+        // This list is compiled from all unique labels for all spring-cloud and spring-projects repo's
+        val OPEN_FOR_CONTRIBUTION_LABELS = setOf(
+            "ideal-for-contribution",
+            "ideal-for-user-contribution",
+            "meta: contributions welcome",
+            "meta: first timers only",
+            "status: ideal-for-contribution",
+            "status: need-help-to-reproduce",
+            "status: first-timers-only",
+            "status/first-timers-only",
+            "community contribution",
+            "contribution welcome",
+            "help wanted",
+            "help-wanted",
+            "first-timers-only",
+            "good first issue",
+            "type/help-needed"
+        )
+    }
+}
