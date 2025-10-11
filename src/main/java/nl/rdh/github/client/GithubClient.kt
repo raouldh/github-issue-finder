@@ -20,29 +20,29 @@ class GithubClient(
 
     fun getLabelsForRepo(org: String, repo: String, page: Int? = null): ResponseEntity<List<Label>> =
         apiClient.get()
-            .uri("/repos/{org}/{repo}/labels{pageParam}", org, repo, getPageParam(page))
+            .uri("/repos/{org}/{repo}/labels" + getPageParam(page), org, repo)
             .retrieve()
             .toEntity()
 
     fun getAllReposForOrg(org: String, page: Int? = null): ResponseEntity<List<Repository>> =
         apiClient.get()
-            .uri("/orgs/{org}/repos{pageParam}", org, getPageParam(page))
+            .uri("/orgs/{org}/repos" + getPageParam(page), org)
             .retrieve()
             .toEntity()
 
     fun getIssuesForRepo(org: String, repo: String, page: Int? = null): ResponseEntity<List<Issue>> =
         apiClient.get()
-            .uri("/repos/{org}/{repo}/issues?page={page}", org, repo, getPageParam(page))
+            .uri("/repos/{org}/{repo}/issues" + getPageParam(page), org, repo)
             .retrieve()
             .toEntity()
 
-    private fun getPageParam(page: Int?) = page?.let { "?page={it}" } ?: ""
+    private fun getPageParam(page: Int?) = page?.let { "?page=${page}" } ?: ""
 
     private fun buildRestClient() = RestClient.builder()
         .requestFactory(HttpComponentsClientHttpRequestFactory())
         .baseUrl(githubApiUrl)
         .also { builder ->
             if (githubApiToken.isNullOrBlank().not())
-                builder.defaultHeader("AUTHORIZATION", "token ${githubApiToken}")
+                builder.defaultHeader("AUTHORIZATION", "token $githubApiToken")
         }.build()
 }
