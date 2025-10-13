@@ -6,6 +6,6 @@ data class Label(
 )
 
 fun List<Label>.labelNames(): List<String> = this
-    .map { it.name }
+    .map { it.name.lowercase() }
     .distinct()
     .sorted()

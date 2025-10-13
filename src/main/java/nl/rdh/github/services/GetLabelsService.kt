@@ -11,9 +11,11 @@ class GetLabelsService(private val githubClientService: GithubClientService) {
     fun getLabelsForOrg(org: String): List<String> =
         githubClientService
             .fetchReposForOrg(org)
-            .parallelFlatMap { getLabelsForRepo(org, it.name) }
-            .distinct()
-            .sortedBy { it.lowercase() }
+            .parallelFlatMap {
+                githubClientService
+                    .fetchLabelsForRepo(org, it.name)
+            }
+            .labelNames()
 
     fun getLabelsForRepo(org: String, repo: String) =
         githubClientService
