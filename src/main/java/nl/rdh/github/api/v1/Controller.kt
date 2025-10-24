@@ -10,16 +10,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import nl.rdh.github.api.v1.model.IssueSummary
 import nl.rdh.github.services.GetLabelsService
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/api/v1")
 @Tag(
     name = "GitHub repo contribution issues",
     description = "API for retrieving GitHub issues that are open for contribution"
 )
-class Controller(private val getLabelService: GetLabelsService) {
+internal class Controller(private val getLabelService: GetLabelsService) {
 
     @GetMapping("/labels/{org}/{repo}")
     @Operation(
@@ -44,7 +47,7 @@ class Controller(private val getLabelService: GetLabelsService) {
         @PathVariable org: String,
         @Parameter(description = "GitHub repository name", required = true, example = "spring-boot")
         @PathVariable repo: String,
-    ): List<String> = getLabelService.getLabelsForRepo(org, repo)
+    ): ResponseEntity<List<String>> = ResponseEntity.ok(getLabelService.getLabelsForRepo(org, repo))
 
     @GetMapping("/labels/{org}")
     @Operation(
@@ -67,7 +70,7 @@ class Controller(private val getLabelService: GetLabelsService) {
     fun getAllLabelsForOrg(
         @Parameter(description = "GitHub organization name", required = true, example = "spring-projects")
         @PathVariable org: String,
-    ) = getLabelService.getLabelsForOrg(org)
+    ): ResponseEntity<List<String>> = ResponseEntity.ok(getLabelService.getLabelsForOrg(org))
 
     @GetMapping("/contribution-issues/{org}")
     @Operation(
@@ -90,5 +93,5 @@ class Controller(private val getLabelService: GetLabelsService) {
     fun getAllIssuesOpenForContributionForOrg(
         @Parameter(description = "GitHub organization name", required = true, example = "spring-projects")
         @PathVariable org: String,
-    ): List<IssueSummary> = getLabelService.getIssuesForMarkedForContribution(org)
+    ): ResponseEntity<List<IssueSummary>> = ResponseEntity.ok(getLabelService.getIssuesForMarkedForContribution(org))
 }

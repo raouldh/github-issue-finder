@@ -3,7 +3,8 @@ package nl.rdh.github.client
 import nl.rdh.github.client.model.Issue
 import nl.rdh.github.client.model.Label
 import nl.rdh.github.client.model.Repository
-import org.springframework.beans.factory.annotation.Value
+import nl.rdh.github.config.GithubProperties
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.stereotype.Component
@@ -12,10 +13,10 @@ import org.springframework.web.client.toEntity
 
 @Component
 class GithubClient(
-    @param:Value("\${github.api.token:}") private val githubApiToken: String?,
-    @param:Value("\${github.api.url:https://api.github.com}") private val githubApiUrl: String,
+    private val properties: GithubProperties,
 ) {
 
+    private val log = LoggerFactory.getLogger(javaClass)
     private val apiClient: RestClient = buildRestClient()
 
     fun getLabelsForRepo(org: String, repo: String, page: Int? = null): ResponseEntity<List<Label>> =
@@ -38,11 +39,20 @@ class GithubClient(
 
     private fun getPageParam(page: Int?) = page?.let { "?page=${page}" } ?: ""
 
-    private fun buildRestClient() = RestClient.builder()
-        .requestFactory(HttpComponentsClientHttpRequestFactory())
-        .baseUrl(githubApiUrl)
-        .also { builder ->
-            if (githubApiToken.isNullOrBlank().not())
-                builder.defaultHeader("AUTHORIZATION", "token $githubApiToken")
-        }.build()
+    private fun buildRestClient(): RestClient {
+        val baseUrl = properties.url
+        val token = properties.token
+        if (log.isDebugEnabled) {
+            log.debug("Building GitHub RestClient with baseUrl={}", baseUrl)
+        }
+        return RestClient.builder()
+            .requestFactory(HttpComponentsClientHttpRequestFactory())
+            .baseUrl(baseUrl)
+            .also { builder ->
+                if (!token.isNullOrBlank()) {
+                    builder.defaultHeader("AUTHORIZATION", "token $token")
+                }
+            }
+            .build()
+    }
 }

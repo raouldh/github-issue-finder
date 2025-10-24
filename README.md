@@ -12,11 +12,12 @@ A Spring Boot REST API service that helps developers find open-source contributi
 
 ## Tech Stack
 
-- **Kotlin** 1.9.22
-- **Spring Boot** 3.4.2
+- **Kotlin** 2.2.0
+- **Spring Boot** 3.5.6
 - **Spring Web MVC**
+- **Spring Boot Actuator**
+- **Spring Boot Validation**
 - **SpringDoc OpenAPI** 2.8.13 (Swagger UI)
-- **GitHub API** 1.326
 - **Java** 21
 
 ## Getting Started
@@ -41,35 +42,35 @@ The application will start on `http://localhost:8080`
 
 ### Get Labels for a Repository
 ```
-http GET /labels/{org}/{repo}
+GET /api/v1/labels/{org}/{repo}
 ```
 Retrieves all labels for a specific repository.
 
 **Example:**
 ```
-bash curl http://localhost:8080/labels/spring-projects/spring-boot
+bash curl http://localhost:8080/api/v1/labels/spring-projects/spring-boot
 ```
 
 ### Get All Labels for an Organization
 ```
-http GET /labels/{org}
+GET /api/v1/labels/{org}
 ```
 Retrieves all unique labels across all repositories in an organization.
 
 **Example:**
 ```
-bash curl http://localhost:8080/labels/spring-projects
+bash curl http://localhost:8080/api/v1/labels/spring-projects
 ``` 
 
 ### Get Contribution Issues for an Organization
 ```
-http GET /contribution-issues/{org}
+GET /api/v1/contribution-issues/{org}
 ```
 Retrieves all open issues marked as open for contribution across all repositories in an organization.
 
 **Example:**
 ```
-bash curl http://localhost:8080/contribution-issues/spring-projects
+bash curl http://localhost:8080/api/v1/contribution-issues/spring-projects
 ``` 
 
 **Response:**
@@ -88,14 +89,17 @@ bash curl http://localhost:8080/contribution-issues/spring-projects
 
 ## Swagger UI Documentation
 Interactive API documentation is available at:
-``` 
-http://localhost:8080/swagger-ui.html
+```
+http://localhost:8080/
 ```
 
 OpenAPI specification:
 ```
 http://localhost:8080/v3/api-docs
 ```
+
+## Error handling
+This API uses RFC 9457 Problem Details for error responses. On errors you'll receive a JSON object with fields like `type`, `title`, `status`, `detail`, and optionally an `errors` map for validation issues.
 
 ## Supported Contribution Labels
 Since there is no uniform convention for marking issues as contribution ready. This service filters issues based on a hardcoded list of labels.
@@ -113,10 +117,20 @@ The service recognizes the following labels as contribution-friendly:
 - type/help-needed
 
 ## Configuration
+### Environment variables
+- GITHUB_API_URL: Base URL for the GitHub API (default: https://api.github.com)
+- GITHUB_API_TOKEN: Personal Access Token used for authenticated requests to increase rate limits (optional)
+
 ### GitHub API Rate Limiting
 The GitHub API has rate limits:
 - **Unauthenticated requests**: 60 requests per hour
 - **Authenticated requests**: 5,000 requests per hour
+
+### Actuator endpoints
+The application exposes a minimal set of actuator endpoints without authentication:
+- /actuator/health
+- /actuator/info
+- /actuator/metrics
 
 ## Development
 ### Building

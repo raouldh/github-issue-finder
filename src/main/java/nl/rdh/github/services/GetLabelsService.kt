@@ -7,7 +7,7 @@ import nl.rdh.github.extensions.parallelFlatMap
 import org.springframework.stereotype.Service
 
 @Service
-class GetLabelsService(private val githubClientService: GithubClientService) {
+internal class GetLabelsService(private val githubClientService: GithubClientService) {
     fun getLabelsForOrg(org: String): List<String> =
         githubClientService
             .fetchReposForOrg(org)

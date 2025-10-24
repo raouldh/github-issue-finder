@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
 @Service
-class GithubClientService(private val githubClient: GithubClient) {
+internal class GithubClientService(private val githubClient: GithubClient) {
 
     fun fetchReposForOrg(org: String) = GithubPagedRequest(
         { githubClient.getAllReposForOrg(org) },
