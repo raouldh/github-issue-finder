@@ -1,6 +1,6 @@
 package nl.rdh.github.services
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class GithubLinkHeaderTest {
@@ -10,6 +10,7 @@ class GithubLinkHeaderTest {
         val headerValue =
             """<https://api.github.com/repositories/2090979/labels?per_page=2&page=2>; rel="next", <https://api.github.com/repositories/2090979/labels?per_page=2&page=35>; rel="last""""
 
-        assertEquals(35, GithubLinkHeader(headerValue).lastPageNumber)
+        val lastPage = GithubLinkHeader(headerValue).lastPageNumber
+        assertThat(lastPage).isEqualTo(35)
     }
 }
