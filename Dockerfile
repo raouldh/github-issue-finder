@@ -1,6 +1,3 @@
-# syntax=docker/dockerfile:1.7
-
-# -------- Builder: GraalVM Community JDK 21 with Native Image --------
 FROM ghcr.io/graalvm/graalvm-community:21 AS builder
 
 ENV GRADLE_USER_HOME=/home/gradle/.gradle \
@@ -10,20 +7,16 @@ RUN gu install native-image || true
 
 WORKDIR /workspace/app
 
-# Copy only build definition first to warm Gradle caches
 COPY gradle gradle
 COPY gradlew .
 COPY settings.gradle.kts build.gradle.kts ./
 RUN chmod +x gradlew
 
-# Warm dependencies (no sources yet)
 RUN ./gradlew --no-daemon build -x test || true
 
-# Copy sources and build native executable
 COPY src src
 RUN ./gradlew --no-daemon nativeCompile -x test
 
-# -------- Runtime: small Debian image with curl for healthcheck --------
 FROM debian:bookworm-slim AS runtime
 
 ENV APP_USER=app \

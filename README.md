@@ -186,6 +186,47 @@ docker run --rm -p 8080:8080 \
   github-issue-finder:latest
 ```
 
+### Option D — Run with Docker Compose
+Prerequisites: Docker (with Compose v2).
+
+```bash
+# Build the image (if needed) and start the app
+docker compose up --build
+
+# In another terminal, follow logs (optional)
+docker compose logs -f
+```
+
+- The service will be available at `http://localhost:8080`.
+- Health endpoint: `http://localhost:8080/actuator/health`.
+- OpenAPI UI: `http://localhost:8080/`.
+
+Environment variables used by Compose (can be set in your shell or a `.env` file at the project root):
+- `GITHUB_API_URL` (default: `https://api.github.com`)
+- `GITHUB_API_TOKEN` (optional, increases rate limits)
+
+Example `.env` file:
+```env
+GITHUB_API_URL=https://api.github.com
+# Personal access token (optional)
+GITHUB_API_TOKEN=
+```
+
+Stop and cleanup:
+```bash
+docker compose down -v
+```
+
+Architecture notes:
+- The provided Dockerfile is platform-agnostic (multi-arch bases). On ARM64 or AMD64 hosts, Docker/Buildx auto-selects the correct platform.
+- To force a platform (optional), you can add this to `docker-compose.yml` under the service:
+
+```yaml
+services:
+  app:
+    platform: linux/arm64 # or linux/amd64
+```
+
 ### Notes
 - Health endpoint: `http://localhost:8080/actuator/health`
 - OpenAPI UI: `http://localhost:8080/`
