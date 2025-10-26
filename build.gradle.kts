@@ -3,6 +3,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.2.0"
     kotlin("plugin.spring") version "2.2.0"
+    id("org.graalvm.buildtools.native") version "0.10.4"
 }
 
 group = "nl.rdh.github"
@@ -26,6 +27,20 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.14.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+}
+
+// Enable native image builds with buildpacks when -Pnative is provided
+// Usage: ./gradlew bootBuildImage -Pnative
+@Suppress("UnstableApiUsage")
+tasks.named("bootBuildImage", org.springframework.boot.gradle.tasks.bundling.BootBuildImage::class.java) {
+    if (project.hasProperty("native")) {
+        builder.set("paketobuildpacks/builder-jammy-tiny")
+        environment.set(mapOf(
+            "BP_NATIVE_IMAGE" to "true",
+            "BP_JVM_VERSION" to "21.*"
+        ))
+        imageName.set("github-issue-finder:latest")
+    }
 }
 
 tasks.test {

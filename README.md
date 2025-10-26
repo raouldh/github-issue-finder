@@ -143,3 +143,50 @@ The application exposes a minimal set of actuator endpoints without authenticati
 ./gradlew test
 ```
 
+## Native Image (GraalVM)
+This project is configured to build and run as a native image using GraalVM and Spring Boot 3 AOT.
+You can choose one of the following options:
+
+### Option A — Build native binary locally
+Prerequisites: GraalVM JDK 21 with `native-image` installed (`gu install native-image`).
+
+```bash
+# Build native executable
+./gradlew nativeCompile
+
+# Run the native app
+./build/native/nativeCompile/github-issue-finder
+```
+
+### Option B — Build a tiny native container image with Cloud Native Buildpacks
+Prerequisites: Docker or Podman.
+
+```bash
+# Build a native container image using buildpacks (Paketobuildpacks)
+./gradlew bootBuildImage -Pnative
+
+# Run
+docker run --rm -p 8080:8080 \
+  -e GITHUB_API_URL=${GITHUB_API_URL:-https://api.github.com} \
+  -e GITHUB_API_TOKEN=${GITHUB_API_TOKEN} \
+  github-issue-finder:latest
+```
+
+### Option C — Build with the provided Dockerfile (multi-stage native build)
+No local GraalVM required. Docker builds the native executable inside the builder stage.
+
+```bash
+# Build the native image using Dockerfile
+docker build -t github-issue-finder:latest .
+
+# Run
+docker run --rm -p 8080:8080 \
+  -e GITHUB_API_URL=${GITHUB_API_URL:-https://api.github.com} \
+  -e GITHUB_API_TOKEN=${GITHUB_API_TOKEN} \
+  github-issue-finder:latest
+```
+
+### Notes
+- Health endpoint: `http://localhost:8080/actuator/health`
+- OpenAPI UI: `http://localhost:8080/`
+

@@ -42,5 +42,4 @@ bin/
 .DS_Store
 /gradle/wrapper
 /.idea/
-/.junie/
 /.env
