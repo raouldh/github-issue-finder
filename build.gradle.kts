@@ -29,9 +29,6 @@ dependencies {
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }
 
-// Enable native image builds with buildpacks when -Pnative is provided
-// Usage: ./gradlew bootBuildImage -Pnative
-@Suppress("UnstableApiUsage")
 tasks.named("bootBuildImage", org.springframework.boot.gradle.tasks.bundling.BootBuildImage::class.java) {
     if (project.hasProperty("native")) {
         builder.set("paketobuildpacks/builder-jammy-tiny")

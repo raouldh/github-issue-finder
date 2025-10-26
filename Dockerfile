@@ -6,9 +6,6 @@ FROM ghcr.io/graalvm/graalvm-community:21 AS builder
 ENV GRADLE_USER_HOME=/home/gradle/.gradle \
     JAVA_TOOL_OPTIONS="-Xmx2g -XX:+ExitOnOutOfMemoryError"
 
-# Native Image tool and ca-certificates are preinstalled in GraalVM community images; no extra packages required
-
-# Install Native Image tool (should already be present, but this is safe)
 RUN gu install native-image || true
 
 WORKDIR /workspace/app
@@ -39,8 +36,6 @@ RUN apt-get update \
 
 WORKDIR ${APP_HOME}
 
-# Copy the native binary produced by Gradle
-# The binary name equals the Gradle project name (settings.gradle.kts)
 COPY --from=builder /workspace/app/build/native/nativeCompile/github-issue-finder /app/app
 
 EXPOSE 8080
