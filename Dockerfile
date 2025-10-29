@@ -1,31 +1,39 @@
-FROM ghcr.io/graalvm/graalvm-community:21 AS builder
+FROM ghcr.io/graalvm/native-image-community:21 AS builder
 
 ENV GRADLE_USER_HOME=/home/gradle/.gradle \
-    JAVA_TOOL_OPTIONS="-Xmx2g -XX:+ExitOnOutOfMemoryError"
+    JAVA_TOOL_OPTIONS="-Xmx6g -XX:+ExitOnOutOfMemoryError" \
+    GRAALVM_NATIVE_IMAGE_OPTIONS="-J-Xmx6g" \
+    LANG=C.UTF-8
 
-RUN gu install native-image || true
+RUN microdnf install -y findutils && microdnf clean all
 
 WORKDIR /workspace/app
 
 COPY gradle gradle
 COPY gradlew .
 COPY settings.gradle.kts build.gradle.kts ./
-RUN chmod +x gradlew
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
 RUN ./gradlew --no-daemon build -x test || true
 
 COPY src src
 RUN ./gradlew --no-daemon nativeCompile -x test
 
+# ---------- Runtime: small Debian with required runtime libs ----------
 FROM debian:bookworm-slim AS runtime
 
 ENV APP_USER=app \
     APP_HOME=/app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl grep \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates \
+        curl \
+        grep \
+        zlib1g \
+        libstdc++6 \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd -r -s /sbin/nologin ${APP_USER}
+    && useradd -r -s /usr/sbin/nologin -d /app ${APP_USER}
 
 WORKDIR ${APP_HOME}
 
